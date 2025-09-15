@@ -1,75 +1,77 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Amplify } from 'aws-amplify';
+import { getCurrentUser, fetchAuthSession, signOut, signInWithRedirect } from 'aws-amplify/auth';
+import amplifyconfig from '@/amplifyconfiguration.json';
 
-// 자체 백엔드에서 사용하는 User 타입
+Amplify.configure(amplifyconfig, { ssr: true });
+
+// Cognito에서 오는 사용자 정보 타입 정의
+interface AuthUser {
+  userId: string;
+  username: string;
+  signInDetails?: {
+    loginId?: string;
+  };
+}
+
 interface User {
-  id: string;
-  name: string | null;
-  email: string;
+    id: string;
+    name: string;
+    email: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
-  login: (userData: User, token: string) => void;
+  login: () => void;
   logout: () => void;
-  getAuthHeader: () => { Authorization?: string };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+
+  const checkUser = async () => {
+    setIsLoading(true);
+    try {
+      const authUser: AuthUser = await getCurrentUser();
+      const session = await fetchAuthSession();
+      
+      // 소셜 로그인 사용자는 username이 고유 ID가 되고, 이메일은 속성에 있음
+      const email = session.tokens?.idToken?.payload.email as string || authUser.signInDetails?.loginId || 'No email';
+      const name = session.tokens?.idToken?.payload.name as string || authUser.username;
+
+      setUser({
+          id: authUser.userId,
+          name: name,
+          email: email,
+      });
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // 페이지 로드 시 localStorage에서 토큰과 사용자 정보를 가져옵니다.
-    try {
-      const storedToken = localStorage.getItem('authToken');
-      const storedUser = localStorage.getItem('user');
-
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      }
-    } catch (error) {
-      console.error("Failed to parse auth data from localStorage", error);
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-    }
-    setIsLoading(false);
+    checkUser();
   }, []);
 
-  const login = (userData: User, newToken: string) => {
-    localStorage.setItem('authToken', newToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setToken(newToken);
-    setUser(userData);
+  const login = () => {
+    // Google 로그인 페이지로 리디렉션
+    signInWithRedirect({ provider: 'Google' });
   };
 
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    setToken(null);
+  const logout = async () => {
+    await signOut();
     setUser(null);
-    // 로그아웃 후 홈으로 이동하고 페이지를 새로고침하여 상태를 확실히 반영
-    router.push('/');
-    router.refresh();
   };
 
-  const getAuthHeader = useCallback(() => {
-    // 현재 상태의 토큰 대신 localStorage에서 직접 가져와 최신성을 보장
-    const currentToken = localStorage.getItem('authToken');
-    if (!currentToken) return {};
-    return { 'Authorization': `Bearer ${currentToken}` };
-  }, []);
-
-  const value = { user, token, isLoading, login, logout, getAuthHeader };
+  const value = { user, isLoading, login, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

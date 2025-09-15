@@ -1,4 +1,8 @@
 "use client";
+import { Amplify } from 'aws-amplify';
+import amplifyconfig from '../src/amplifyconfiguration.json';
+
+Amplify.configure(amplifyconfig, { ssr: true });
 
 import type React from "react"
 import { Inter, Noto_Sans_KR } from "next/font/google"
