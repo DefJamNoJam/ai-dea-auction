@@ -16,7 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (userData: User, token: string) => void;
   logout: () => void;
-  getAuthHeader: () => Record<string, string>;
+  getAuthHeader: () => { Authorization?: string };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
