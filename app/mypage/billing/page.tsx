@@ -88,7 +88,7 @@ const CheckoutForm = ({ onSuccess, onCancel }: { onSuccess: (paymentMethod: any)
 
 
 export default function BillingPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
