@@ -45,7 +45,7 @@ const CheckoutForm = ({ onSuccess, onCancel }: { onSuccess: (paymentMethod: any)
         path: "/create-setup-intent"
       });
       const response = await restOperation.response;
-      const { clientSecret } = await response.body.json();
+      const { clientSecret } = (await response.body.json()) as { clientSecret: string };
 
       // 2. 받은 clientSecret과 카드 정보로 Stripe에 결제 수단 등록 요청
       const cardElement = elements.getElement(CardElement);
