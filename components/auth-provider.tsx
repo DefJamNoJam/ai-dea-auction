@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Amplify } from 'aws-amplify';
 import { getCurrentUser, fetchAuthSession, signOut, signInWithRedirect } from 'aws-amplify/auth';
-import amplifyconfig from '@/amplifyconfiguration.json';
+import amplifyconfig from '../amplifyconfiguration.json';
 
 Amplify.configure(amplifyconfig, { ssr: true });
 
