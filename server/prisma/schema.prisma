@@ -1,0 +1,111 @@
+// server/prisma/schema.prisma
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  name      String
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  ideas     Idea[]
+  comments  Comment[]
+  likes     Like[]
+  sales     Transaction[] @relation("SellerTransactions")
+  purchases Transaction[] @relation("BuyerTransactions")
+  bids      Bid[]
+}
+
+model Idea {
+  id                   String    @id @default(uuid())
+  title                String
+  description          String
+  category             String?
+  tags                 String[]
+  status               String
+  ownerName            String?
+  views                Int?      @default(0)
+  likes                Int       @default(0)
+  startingPrice        Float?    @default(0)
+  auctionDuration      Int?      @default(7)
+  technicalDetails     String?
+  marketPotential      String?
+  competitiveAdvantage String?
+  implementationPlan   String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  comments             Comment[]
+  likedBy              Like[]
+  author               User      @relation(fields: [authorId], references: [id])
+  authorId             String
+  
+  // --- ✨ 수정된 부분: Idea와 Auction의 1:1 관계 추가 ---
+  auction   Auction?
+}
+
+model Like {
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  idea      Idea     @relation(fields: [ideaId], references: [id])
+  ideaId    String
+  @@id([userId, ideaId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  ownerName String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  idea      Idea     @relation(fields: [ideaId], references: [id])
+  ideaId    String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+}
+
+model Transaction {
+  id         String   @id @default(uuid())
+  finalPrice Float
+  ideaTitle  String
+  createdAt  DateTime @default(now())
+  seller     User     @relation("SellerTransactions", fields: [sellerId], references: [id])
+  sellerId   String
+  buyer      User     @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  buyerId    String
+  commissionFee Float?
+}
+
+// --- ✨ 새로 추가된 부분: Auction과 Bid 모델 생성 ---
+model Auction {
+  id            String    @id @default(uuid())
+  startTime     DateTime
+  endTime       DateTime
+  currentBid    Float?
+  
+  idea    Idea   @relation(fields: [ideaId], references: [id])
+  ideaId  String @unique // 1:1 관계를 위해 unique 설정
+
+  bids Bid[]
+}
+
+model Bid {
+  id        String   @id @default(uuid())
+  amount    Float
+  createdAt DateTime @default(now())
+
+  auction   Auction @relation(fields: [auctionId], references: [id])
+  auctionId String
+
+  bidder    User    @relation(fields: [bidderId], references: [id])
+  bidderId  String
+}
