@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { generateClient } from 'aws-amplify/api';
 import { getCurrentUser } from "aws-amplify/auth";
-import * as queries from '@/graphql/queries';
-import { type Transaction } from '@/API';
+// import * as queries from '@/graphql/queries';
+// import { type Transaction } from '@/API';
 import { post } from 'aws-amplify/api'; // REST API 호출을 위한 post 함수
 
 // Stripe 라이브러리 import
