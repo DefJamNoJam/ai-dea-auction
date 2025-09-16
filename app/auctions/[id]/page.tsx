@@ -108,8 +108,9 @@ export default function AuctionDetailPage() {
       const data = await response.body.json();
 
       if (response.statusCode !== 201) {
-          throw new Error(data.error || "Failed to place bid.");
-      }
+        const errorMessage = data?.error || "Failed to place bid.";
+        throw new Error(errorMessage);
+    }
 
       // 성공 시 경매 데이터 새로고침
       setAuction(prev => {
