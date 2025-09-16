@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
+import { post } from 'aws-amplify/api';
 
 interface CommentFormProps {
   ideaId: string;
@@ -14,30 +15,25 @@ interface CommentFormProps {
 export function CommentForm({ ideaId, onCommentAdded }: CommentFormProps) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !user || !token) return;
+    if (!content.trim() || !user) return;
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ideas/${ideaId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: content.trim(),
-          authorId: user.id,
-        }),
+      const restOperation = post({
+        apiName: "apigw",
+        path: `/ideas/${ideaId}/comments`,
+        options: {
+          body: {
+            content: content.trim()
+          }
+        }
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to add comment');
-      }
+      await restOperation.response;
       
       setContent('');
       onCommentAdded(); // 댓글 목록 새로고침
