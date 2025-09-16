@@ -1,18 +1,26 @@
 {
-    "aws_project_region": "ap-northeast-2",
-    "aws_cognito_region": "ap-northeast-2",
-    "aws_user_pools_id": "ap-northeast-2_KtNhBFRJ0",
-    "aws_user_pools_web_client_id": "100hockpevhvmdcc16t3v5gfnk",
-    "oauth": {
-      "domain": "ap-northeast-2ktnhbfrj0.auth.ap-northeast-2.amazoncognito.com",
-      "scope": [
-        "phone",
-        "email",
-        "openid",
-        "profile"
-      ],
-      "redirectSignIn": "https://main.d3ghdztq304xz0.amplifyapp.com",
-      "redirectSignOut": "https://main.d3ghdztq304xz0.amplifyapp.com",
-      "responseType": "code"
+  "aws_project_region": "ap-northeast-2",
+  "aws_cognito_region": "ap-northeast-2",
+  "aws_user_pools_id": "ap-northeast-2_KtNhBFRJ0",
+  "aws_user_pools_web_client_id": "100hockpevhvmdcc16t3v5gfnk",
+  "oauth": {
+    "domain": "ap-northeast-2ktnhbfrj0.auth.ap-northeast-2.amazoncognito.com",
+    "scope": [
+      "phone",
+      "email",
+      "openid",
+      "profile"
+    ],
+    "redirectSignIn": "https://main.d3ghdztq304xz0.amplifyapp.com",
+    "redirectSignOut": "https://main.d3ghdztq304xz0.amplifyapp.com",
+    "responseType": "code"
+  },
+  "API": {
+    "REST": {
+      "apigw": {
+        "endpoint": "https://2oox7c1u24.execute-api.ap-northeast-2.amazonaws.com/prod",
+        "region": "ap-northeast-2"
+      }
     }
   }
+}

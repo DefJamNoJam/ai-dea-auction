@@ -8,10 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import { post } from 'aws-amplify/api'; // ✨ Amplify API post 함수 import
 
 // 데이터 타입 정의
 interface Bid {
@@ -42,7 +41,8 @@ interface AuctionData {
 export default function AuctionDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, getAuthHeader } = useAuth();
+  // ✨ getAuthHeader 제거
+  const { user } = useAuth();
   const ideaId = params.id as string;
 
   const [auction, setAuction] = useState<AuctionData | null>(null);
@@ -81,6 +81,7 @@ export default function AuctionDetailPage() {
     fetchAuction();
   }, [ideaId]);
 
+  // ✨ --- handlePlaceBid 함수 전체를 Amplify API를 사용하도록 수정 --- ✨
   const handlePlaceBid = async () => {
     if (!user) {
       router.push(`/login?returnTo=/auctions/${ideaId}`);
@@ -93,16 +94,23 @@ export default function AuctionDetailPage() {
     setIsBidding(true);
     setError(null);
     try {
-      const headers = getAuthHeader();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auctions/${ideaId}/bids`, {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: parseFloat(bidAmount) }),
+      const restOperation = post({
+        apiName: "apigw", // API Gateway 이름을 입력해야 합니다. (아래 설명 참조)
+        path: `/auctions/${ideaId}/bids`,
+        options: {
+          body: {
+            amount: parseFloat(bidAmount)
+          }
+        }
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to place bid.");
+      
+      const response = await restOperation.response;
+      const data = await response.body.json();
+
+      if (response.statusCode !== 201) {
+          throw new Error(data.error || "Failed to place bid.");
       }
+
       // 성공 시 경매 데이터 새로고침
       setAuction(prev => {
         if (!prev) return null;
@@ -150,7 +158,6 @@ export default function AuctionDetailPage() {
             </div>
             <div className="text-right">
                 <p className="text-sm text-muted-foreground">Auction Ends In:</p>
-                {/* AuctionTimer 컴포넌트는 없으므로, 남은 시간 텍스트로 대체합니다. */}
                 <p className="text-lg font-semibold">{new Date(auction.endTime).toLocaleString()}</p>
             </div>
           </section>
