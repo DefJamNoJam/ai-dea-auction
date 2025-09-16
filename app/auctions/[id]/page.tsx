@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { post } from 'aws-amplify/api'; // ✨ Amplify API post 함수 import
+import { post } from 'aws-amplify/api';
 
 // 데이터 타입 정의
 interface Bid {
@@ -41,7 +41,6 @@ interface AuctionData {
 export default function AuctionDetailPage() {
   const params = useParams();
   const router = useRouter();
-  // ✨ getAuthHeader 제거
   const { user } = useAuth();
   const ideaId = params.id as string;
 
@@ -81,7 +80,6 @@ export default function AuctionDetailPage() {
     fetchAuction();
   }, [ideaId]);
 
-  // ✨ --- handlePlaceBid 함수 전체를 Amplify API를 사용하도록 수정 --- ✨
   const handlePlaceBid = async () => {
     if (!user) {
       router.push(`/login?returnTo=/auctions/${ideaId}`);
@@ -95,7 +93,7 @@ export default function AuctionDetailPage() {
     setError(null);
     try {
       const restOperation = post({
-        apiName: "apigw", // API Gateway 이름을 입력해야 합니다. (아래 설명 참조)
+        apiName: "apigw",
         path: `/auctions/${ideaId}/bids`,
         options: {
           body: {
@@ -105,18 +103,25 @@ export default function AuctionDetailPage() {
       });
       
       const response = await restOperation.response;
-      const data = await response.body.json();
+      // 'data'의 타입을 'any'로 명시적으로 지정하여 타입 추론 오류를 막습니다.
+      const data: any = await response.body.json();
 
       if (response.statusCode !== 201) {
-        const errorMessage = data?.error || "Failed to place bid.";
-        throw new Error(errorMessage);
-    }
+          // data가 존재하고, 객체이며, error 속성을 가졌는지 확실하게 확인합니다.
+          if (data && typeof data === 'object' && 'error' in data) {
+              throw new Error(data.error || "Failed to place bid.");
+          }
+          // 그 외의 경우는 일반적인 에러 메시지를 던집니다.
+          throw new Error("Failed to place bid due to an unknown error.");
+      }
 
       // 성공 시 경매 데이터 새로고침
       setAuction(prev => {
         if (!prev) return null;
-        const newBids = [data.newBid, ...prev.bids];
-        return { ...prev, currentBid: data.updatedAuction.currentBid, bids: newBids };
+        // 타입 안정성을 위해 data의 타입을 any로 간주합니다.
+        const anyData = data as any;
+        const newBids = [anyData.newBid, ...prev.bids];
+        return { ...prev, currentBid: anyData.updatedAuction.currentBid, bids: newBids };
       });
       const newMinBid = (data.updatedAuction.currentBid || 0) + 1;
       setBidAmount(newMinBid.toString());
