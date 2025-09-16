@@ -3,9 +3,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Amplify } from 'aws-amplify';
 import { getCurrentUser, fetchAuthSession, signOut, signInWithRedirect } from 'aws-amplify/auth';
-import amplifyconfig from '../amplifyconfiguration.json';
-
-Amplify.configure(amplifyconfig, { ssr: true });
 
 // Cognito에서 오는 사용자 정보 타입 정의
 interface AuthUser {
