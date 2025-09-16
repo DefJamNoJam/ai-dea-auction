@@ -51,7 +51,7 @@ export default function IdeaDetailPage() {
                 path: `/ideas/${ideaId}`
             });
             const response = await restOperation.response;
-            const data = await response.body.json();
+            const data = (await response.body.json()) as Idea;
             setIdea(data);
             setCommentCount(data._count?.comments || 0);
         } catch (err) {
