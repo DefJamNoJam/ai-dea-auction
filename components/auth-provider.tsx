@@ -3,16 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Amplify } from 'aws-amplify';
 import { getCurrentUser, fetchAuthSession, signOut, signInWithRedirect } from 'aws-amplify/auth';
+import { Hub } from 'aws-amplify/utils';
 
-// Cognito에서 오는 사용자 정보 타입 정의
-interface AuthUser {
-  userId: string;
-  username: string;
-  signInDetails?: {
-    loginId?: string;
-  };
-}
-
+// User 타입 정의
 interface User {
     id: string;
     name: string;
@@ -32,14 +25,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 사용자 정보를 가져오는 함수
   const checkUser = async () => {
-    setIsLoading(true);
     try {
-      const authUser: AuthUser = await getCurrentUser();
+      const authUser = await getCurrentUser();
       const session = await fetchAuthSession();
       
-      // 소셜 로그인 사용자는 username이 고유 ID가 되고, 이메일은 속성에 있음
-      const email = session.tokens?.idToken?.payload.email as string || authUser.signInDetails?.loginId || 'No email';
+      const email = session.tokens?.idToken?.payload.email as string || 'No email';
       const name = session.tokens?.idToken?.payload.name as string || authUser.username;
 
       setUser({
@@ -55,17 +47,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Amplify Hub를 사용하여 인증 이벤트를 감지합니다.
+    const unsubscribe = Hub.listen('auth', ({ payload }) => {
+      switch (payload.event) {
+        case 'signedIn':
+        case 'autoSignIn':
+          // 로그인 성공 시 사용자 정보를 다시 확인합니다.
+          checkUser();
+          break;
+        case 'signedOut':
+          // 로그아웃 시 사용자 정보를 null로 설정합니다.
+          setUser(null);
+          break;
+      }
+    });
+
+    // 컴포넌트가 처음 로드될 때 사용자 상태를 확인합니다.
     checkUser();
+
+    // 컴포넌트가 언마운트될 때 리스너를 정리합니다.
+    return unsubscribe;
   }, []);
 
   const login = () => {
-    // Google 로그인 페이지로 리디렉션
     signInWithRedirect({ provider: 'Google' });
   };
 
   const logout = async () => {
     await signOut();
-    setUser(null);
+    setUser(null); // 즉시 UI 업데이트
   };
 
   const value = { user, isLoading, login, logout };
