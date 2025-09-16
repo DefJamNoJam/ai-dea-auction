@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Button } from './ui/button';
 import { useAuth } from '@/components/auth-provider';
+import { get, del } from 'aws-amplify/api'; // Amplify API 함수 import
 
 interface Comment {
   id: string;
@@ -24,18 +25,20 @@ export function CommentList({ ideaId }: CommentListProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, getAuthHeader, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth(); // getAuthHeader 제거
 
   const fetchComments = useCallback(async () => {
     if (isAuthLoading) return;
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ideas/${ideaId}/comments`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
-      }
-      const data = await response.json();
+      // fetch 대신 Amplify get 사용
+      const restOperation = get({
+        apiName: "apigw",
+        path: `/ideas/${ideaId}/comments`
+      });
+      const response = await restOperation.response;
+      const data = (await response.body.json()) as unknown as Comment[];
       setComments(data);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -49,30 +52,27 @@ export function CommentList({ ideaId }: CommentListProps) {
     fetchComments();
   }, [fetchComments]);
 
-  // ✨ --- 수정된 부분 시작 --- ✨
   const handleDelete = async (commentId: string) => {
     if (!window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ideas/${ideaId}/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: getAuthHeader(),
+      // fetch와 getAuthHeader 대신 Amplify del 사용
+      const restOperation = del({
+        apiName: "apigw",
+        path: `/ideas/${ideaId}/comments/${commentId}`
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete comment');
-      }
+      await restOperation.response;
       
-      // 삭제 성공 시 화면에서 바로 제거하여 새로고침 효과를 줍니다.
       setComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
 
     } catch (error) {
       console.error("Error deleting comment:", error);
-      alert(error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.');
+      const anyError = error as any;
+      // API Gateway에서 오는 에러 메시지를 표시
+      const errorMessage = anyError.response?.body ? (await anyError.response.body.json()).error : '삭제 중 오류가 발생했습니다.';
+      alert(errorMessage);
     }
   };
-  // ✨ --- 수정된 부분 끝 --- ✨
 
   if (isLoading) {
     return <div className="text-center py-4 text-muted-foreground">댓글 로딩 중...</div>;
@@ -82,11 +82,7 @@ export function CommentList({ ideaId }: CommentListProps) {
     return (
       <div className="text-center py-4">
         <div className="text-red-600 mb-2">{error}</div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={fetchComments}
-        >
+        <Button variant="outline" size="sm" onClick={fetchComments}>
           다시 시도
         </Button>
       </div>
@@ -106,10 +102,7 @@ export function CommentList({ ideaId }: CommentListProps) {
                   {comment.author.name || '익명'}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {formatDistanceToNow(new Date(comment.createdAt), { 
-                    addSuffix: true,
-                    locale: ko 
-                  })}
+                  {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: ko })}
                 </div>
               </div>
               {user?.id === comment.author.id && (
