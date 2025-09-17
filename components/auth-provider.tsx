@@ -51,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = Hub.listen('auth', ({ payload }) => {
       switch (payload.event) {
         case 'signedIn':
-        case 'autoSignIn':
           // 로그인 성공 시 사용자 정보를 다시 확인합니다.
           checkUser();
           break;
