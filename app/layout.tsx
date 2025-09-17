@@ -1,9 +1,4 @@
 "use client";
-import { Amplify } from 'aws-amplify';
-import amplifyconfig from '../amplifyconfiguration.json';
-
-Amplify.configure(amplifyconfig, { ssr: true });
-
 import type React from "react"
 import { Inter, Noto_Sans_KR } from "next/font/google"
 import "./globals.css"
@@ -11,6 +6,7 @@ import { LanguageProvider } from "@/components/language-provider"
 import { AuthProvider } from "@/components/auth-provider" 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import ConfigureAmplifyClientSide from "@/components/ConfigureAmplify";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${notoSansKR.variable}`}>
       <body>
+        <ConfigureAmplifyClientSide />
         <AuthProvider>
           <LanguageProvider>
             <Header />
