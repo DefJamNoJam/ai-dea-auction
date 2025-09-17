@@ -1,7 +1,7 @@
+// components/auth-provider.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Amplify } from 'aws-amplify';
 import { getCurrentUser, fetchAuthSession, signOut, signInWithRedirect } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 
@@ -25,13 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 사용자 정보를 가져오는 함수
   const checkUser = async () => {
     try {
       const authUser = await getCurrentUser();
       const session = await fetchAuthSession();
-      
-      const email = session.tokens?.idToken?.payload.email as string || 'No email';
+
+      const email = session.tokens?.idToken?.payload.email as string || 'No email provided';
       const name = session.tokens?.idToken?.payload.name as string || authUser.username;
 
       setUser({
@@ -40,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: email,
       });
     } catch (error) {
+      console.error("Not signed in:", error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -47,25 +47,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Amplify Hub를 사용하여 인증 이벤트를 감지합니다.
     const unsubscribe = Hub.listen('auth', ({ payload }) => {
       switch (payload.event) {
         case 'signedIn':
-          // 로그인 성공 시 사용자 정보를 다시 확인합니다.
+        case 'tokenRefresh': // 세션이 갱신될 때도 사용자 정보를 업데이트합니다.
           checkUser();
           break;
         case 'signedOut':
-          // 로그아웃 시 사용자 정보를 null로 설정합니다.
           setUser(null);
           break;
       }
     });
 
-    // 컴포넌트가 처음 로드될 때 사용자 상태를 확인합니다.
-    checkUser();
+    checkUser(); // 페이지 로드 시 첫 사용자 확인
 
-    // 컴포넌트가 언마운트될 때 리스너를 정리합니다.
-    return unsubscribe;
+    return unsubscribe; // 컴포넌트가 사라질 때 리스너를 정리합니다.
   }, []);
 
   const login = () => {
@@ -74,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await signOut();
-    setUser(null); // 즉시 UI 업데이트
+    setUser(null);
   };
 
   const value = { user, isLoading, login, logout };
