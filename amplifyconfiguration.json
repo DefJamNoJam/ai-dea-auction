@@ -1,10 +1,10 @@
 {
   "aws_project_region": "ap-northeast-2",
   "aws_cognito_region": "ap-northeast-2",
-  "aws_user_pools_id": "ap-northeast-2_q6tal2c2a",
-  "aws_user_pools_web_client_id": "100hockpevhvmdcc16t3v5gfnk",
+  "aws_user_pools_id": "ap-northeast-2_LNSOHaeLw",
+  "aws_user_pools_web_client_id": "7k13g8l8ou0sofrei51ulegj1n",
   "oauth": {
-    "domain": "ap-northeast-2ktnhbfrj0.auth.ap-northeast-2.amazoncognito.com",
+    "domain": "ap-northeast-2lnsohaelw.auth.ap-northeast-2.amazoncognito.com",
     "scope": [
       "phone",
       "email",
